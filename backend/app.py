@@ -4,7 +4,7 @@ from flask import Flask, request, jsonify
 
 app = Flask("Telecom Customer Churn Predictor")
 
-model = joblib.load("/content/backend_files/churn_prediction_model_v1_0.joblib")
+model = joblib.load("churn_prediction_model_v1_0.joblib")
 
 @app.get("/")
 def home():

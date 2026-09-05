@@ -29,7 +29,6 @@ PhoneService = st.selectbox(
     ["Yes", "No"]
 )
 
-
 InternetService = st.selectbox(
     "Type of Internet Service",
     ["DSL", "Fiber optic", "No"]
@@ -63,7 +62,7 @@ MonthlyCharges = st.number_input(
 
 
 TotalCharges = st.number_input(
-    "Total Charges".
+    "Total Charges",
     min_value = 0.0,
     value = 600.0
 )
