@@ -2,63 +2,70 @@ import joblib
 import pandas as pd
 from flask import Flask, request, jsonify
 
+# Initialize Flask app with a name
 app = Flask("Telecom Customer Churn Predictor")
 
+# Load the trained churn prediction model
 model = joblib.load("churn_prediction_model_v1_0.joblib")
 
-@app.get("/")
+# Define a route for the home page
+@app.get('/')
 def home():
-  return "Welcome to the Telecom Customer Churn Prediction API"
+    return "Welcome to the Telecom Customer Churn Prediction API"
 
-@app.post("/v1/customer")
+# Define an endpoint to predict churn for a single customer
+@app.post('/v1/customer')
 def predict_churn():
+    # Get JSON data from the request
+    customer_data = request.get_json()
 
-  customer_data = request.get_json()
+    # Extract relevant customer features from the input data
+    sample = {
+        'SeniorCitizen': customer_data['SeniorCitizen'],
+        'Partner': customer_data['Partner'],
+        'Dependents': customer_data['Dependents'],
+        'tenure': customer_data['tenure'],
+        'PhoneService': customer_data['PhoneService'],
+        'InternetService': customer_data['InternetService'],
+        'Contract': customer_data['Contract'],
+        'PaymentMethod': customer_data['PaymentMethod'],
+        'MonthlyCharges': customer_data['MonthlyCharges'],
+        'TotalCharges': customer_data['TotalCharges']
+    }
 
-  sample = {
-      "SeniorCitizen": customer_data["SeniorCitizen"],
-      "Partner": customer_data["Partner"],
-      "Dependents": customer_data["Dependents"],
-      "tenure": customer_data["tenure"],
-      "PhoneService": customer_data["PhoneService"],
-      "InternetService": customer_data["InternetService"],
-      "Contract": customer_data["Contract"],
-      "PaymentMethod": customer_data["PaymentMethod"],
-      "MonthlyCharges": customer_data["MonthlyCharges"],
-      'TotalCharges': customer_data["TotalCharges"]
-  }
+    # Convert the extracted data into a DataFrame
+    input_data = pd.DataFrame([sample])
 
+    # Make a churn prediction using the trained model
+    prediction = model.predict(input_data).tolist()[0]
 
-  input_data = pd.DataFrame([sample])
+    # Map prediction result to a human-readable label
+    prediction_label = "churn" if prediction == 1 else "not churn"
 
-  prediction = model.predict(input_data).tolist()[0]
+    # Return the prediction as a JSON response
+    return jsonify({'Prediction': prediction_label})
 
-  prediction_label = "churn" if prediction == 1 else "not churn"
-
-  return jsonify({"Prediction": prediction_label})
-
-
-@app.post("/v1/customerbatch")
+# Define an endpoint to predict churn for a batch of customers
+@app.post('/v1/customerbatch')
 def predict_churn_batch():
+    # Get the uploaded CSV file from the request
+    file = request.files['file']
 
-  file = request.files["file"]
+    # Read the file into a DataFrame
+    input_data = pd.read_csv(file)
 
-  input_data = pd.read_csv(file)
+    # Make predictions for the batch data and convert raw predictions into a readable format
+    predictions = [
+        'Churn' if x == 1
+        else "Not Churn"
+        for x in model.predict(input_data.drop("customerID",axis=1)).tolist()
+    ]
 
-  predictions = [
+    cust_id_list = input_data.customerID.values.tolist()
+    output_dict = dict(zip(cust_id_list, predictions))
 
-                 "Churn" if x == 1 else "Not Churn"
-                 for x in model.predict(input_data.drop("CustomerID", axis = 1)).tolist()
-  ]
+    return output_dict
 
-
-  cust_id_list = input_data.customerID.values.tolist()
-
-  output_dict = dict(zip(cust_id_list, predictions))
-
-  return output_dict
-
-
-
-if __name__ == "__main__":
-  app.run(debug = True)
+# Run the Flask app in debug mode
+if __name__ == '__main__':
+    app.run(debug=True)
